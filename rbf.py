@@ -17,6 +17,8 @@ import sys
 from numpy.lib.function_base import append
 from pandas.core import api
 from sklearn.cluster import KMeans
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
 
 def checkParameters():
     parameters = []
@@ -199,6 +201,11 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
     TODO: Obtain the distances from the centroids to the test patterns
           and obtain the R matrix for the test set
     """
+    kmeans_test, distances_test, centers_test = clustering(classification, test_inputs, 
+                                              test_outputs, num_rbf)
+    radii_test = calculate_radii(centers_test, num_rbf)
+    
+    r_matrix_test = calculate_r_matrix(distances_test, radii_test)
 
     # # # # KAGGLE # # # #
     if model_file != "":
@@ -431,6 +438,14 @@ def calculate_r_matrix(distances, radii):
     """
 
     #TODO: Complete the code of the function
+    r_matrix = []
+    for i in range(len(distances)):
+        outs = []
+        for j in range(len(distances[i])):
+            outs.append(pow(math.e,-distances[i][j]))
+        outs.append(1)
+        r_matrix.append(outs)
+
     return r_matrix
 
 def invert_matrix_regression(r_matrix, train_outputs):
@@ -455,6 +470,12 @@ def invert_matrix_regression(r_matrix, train_outputs):
     """
 
     #TODO: Complete the code of the function
+    R = np.array(r_matrix)
+    B = np.array(train_outputs)
+    R1 = np.linalg.pinv(R)
+    coefficients = np.matmul(R1,B)
+    coefficients = coefficients.tolist()
+
     return coefficients
 
 def logreg_classification(matriz_r, train_outputs, l2, eta):
@@ -482,6 +503,8 @@ def logreg_classification(matriz_r, train_outputs, l2, eta):
     """
 
     #TODO: Complete the code of the function
+    logreg = LogisticRegression( random_state=1/eta)
+    logreg.fit(matriz_r,train_outputs)
     return logreg
 
 
