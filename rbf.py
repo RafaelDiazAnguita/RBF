@@ -201,11 +201,15 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
     TODO: Obtain the distances from the centroids to the test patterns
           and obtain the R matrix for the test set
     """
-    kmeans_test, distances_test, centers_test = clustering(classification, test_inputs, 
-                                              test_outputs, num_rbf)
-    radii_test = calculate_radii(centers_test, num_rbf)
+    test_distances = []
+    for i in range (len(train_inputs)):
+        each_distance = []
+        for j in range(num_rbf):
+            each_distance.append( euclidean_distance(train_inputs[i],centers[j]) )
+
+        test_distances.append(each_distance)
     
-    r_matrix_test = calculate_r_matrix(distances_test, radii_test)
+    r_matrix_test = calculate_r_matrix(test_distances, radii)
 
     # # # # KAGGLE # # # #
     if model_file != "":
@@ -233,12 +237,16 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
         TODO: Obtain the predictions for training and test and calculate
               the MSE
         """
+        test_predictions = np.dot(test_inputs, coefficients)
+        
     else:
         """
         TODO: Obtain the predictions for training and test and calculate
               the CCR. Obtain also the MSE, but comparing the obtained
               probabilities and the target probabilities
         """
+        test_predictions = logreg.predict(test_inputs)
+        print(test_predictions)
 
     return train_mse, test_mse, train_ccr, test_ccr
 
@@ -442,7 +450,7 @@ def calculate_r_matrix(distances, radii):
     for i in range(len(distances)):
         outs = []
         for j in range(len(distances[i])):
-            outs.append(pow(math.e,-distances[i][j]))
+            outs.append(pow(math.e, -distances[i][j] / (2*pow(radii[j],2) ) ) )
         outs.append(1)
         r_matrix.append(outs)
 
@@ -474,6 +482,7 @@ def invert_matrix_regression(r_matrix, train_outputs):
     B = np.array(train_outputs)
     R1 = np.linalg.pinv(R)
     coefficients = np.matmul(R1,B)
+    coefficients = coefficients.transpose()
     coefficients = coefficients.tolist()
 
     return coefficients
@@ -503,7 +512,11 @@ def logreg_classification(matriz_r, train_outputs, l2, eta):
     """
 
     #TODO: Complete the code of the function
-    logreg = LogisticRegression( random_state=1/eta)
+    if (l2):
+        logreg = LogisticRegression( C=1/eta,penalty='l2',solver='liblinear')
+    else:
+        logreg = LogisticRegression( C=1/eta,penalty='l1',solver='liblinear')
+
     logreg.fit(matriz_r,train_outputs)
     return logreg
 
