@@ -20,6 +20,8 @@ from sklearn.cluster import KMeans
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
+from ejercicio import X_test
+
 def checkParameters():
     parameters = []
     parameters.append(["-c",False])
@@ -190,12 +192,12 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
     
     radii = calculate_radii(centers, num_rbf)
     
-    r_matrix = calculate_r_matrix(distances, radii)
+    r_matrix_train = calculate_r_matrix(distances, radii)
 
-    if not classification:
-        coefficients = invert_matrix_regression(r_matrix, train_outputs)
+    if classification:
+        logreg = logreg_classification(r_matrix_train, train_outputs, l2, eta)
     else:
-        logreg = logreg_classification(r_matrix, train_outputs, l2, eta)
+        coefficients = invert_matrix_regression(r_matrix_train, train_outputs)
 
     """
     TODO: Obtain the distances from the centroids to the test patterns
@@ -232,14 +234,7 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
     
     # # # # # # # # # # #
 
-    if not classification:
-        """
-        TODO: Obtain the predictions for training and test and calculate
-              the MSE
-        """
-        test_predictions = np.dot(test_inputs, coefficients)
-        
-    else:
+    if classification:
         """
         TODO: Obtain the predictions for training and test and calculate
               the CCR. Obtain also the MSE, but comparing the obtained
@@ -247,6 +242,22 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
         """
         test_predictions = logreg.predict(test_inputs)
         print(test_predictions)
+    else:
+        """
+        TODO: Obtain the predictions for training and test and calculate
+              the MSE
+        """
+        train_predictions = np.dot(r_matrix_train, coefficients)
+        test_predictions = np.dot(r_matrix_test, coefficients)
+        train_mse = 0.0
+        test_mse = 0.0
+
+        train_mse = sum(pow(train_outputs-train_predictions,2)) / (outputs * len(train_outputs)) 
+        test_mse = sum(pow(test_outputs-test_predictions,2)) / (outputs * len(test_outputs)) 
+        
+        train_ccr = 0
+        test_ccr = 0
+
 
     return train_mse, test_mse, train_ccr, test_ccr
 
@@ -276,49 +287,17 @@ def read_data(train_file, test_file, outputs):
         test_outputs: array, shape (n_test_patterns,n_outputs)
             Matrix containing the outputs for the test patterns
     """
-    train_inputs = []
-    train_outputs = []
-    test_inputs = []
-    test_outputs = []
-
-    #TRAIN
-    f = open(train_file, "r")
-
-    first = f.readline().replace("\n","")
-    first = list(first.split(" "))
-
-    n_inputs = int(first[0])
-    n_outputs = int(first[1])
-    n_patterns = int(first[2])
-
-    for pattern in range(n_patterns):
-        line = f.readline().replace("\n","")
-        line = list(line.split(" "))
-        for c in range(len(line)):
-            line[c] = float(line[c])
-
-        train_inputs.append(line[0:n_inputs])
-        train_outputs.append(line[n_inputs:n_inputs+n_outputs])
-    #TEST
-    f = open(test_file, "r")
-
-    first = f.readline().replace("\n","")
-    first = list(first.split(" "))
-
-    n_inputs = int(first[0])
-    n_outputs = int(first[1])
-    n_patterns = int(first[2])
-
-    for pattern in range(n_patterns):
-        line = f.readline().replace("\n","")
-        line = list(line.split(" "))
-        for c in range(len(line)):
-            line[c] = float(line[c])
-
-        test_inputs.append(line[0:n_inputs])
-        test_outputs.append(line[n_inputs:n_inputs+n_outputs])
-
     #TODO: Complete the code of the function
+    train_df = pd.read_csv(train_file,header=None)
+
+    train_inputs = train_df.values[:,0:-outputs]
+    train_outputs = train_df.values[:,-outputs]
+
+    test_df = pd.read_csv(test_file,header=None)
+
+    test_inputs = test_df.values[:,0:-outputs]
+    test_outputs = test_df.values[:,-outputs]
+
     return train_inputs, train_outputs, test_inputs, test_outputs
 
 def init_centroids_classification(train_inputs, train_outputs, num_rbf):
@@ -380,8 +359,17 @@ def clustering(classification, train_inputs, train_outputs, num_rbf):
     """
 
     #TODO: Complete the code of the function
-    kmeans = KMeans(n_clusters = num_rbf,max_iter = 500)
-    kmeans.fit(train_inputs)
+    kmeans = KMeans(n_clusters = num_rbf,max_iter = 500,n_init=1)
+
+    if classification:
+        index = np.random.choice(train_inputs.shape[0],num_rbf,replace=False)
+        patterns = train_inputs[index]
+        kmeans.fit(patterns)
+    else:
+        index = np.linspace(0,len(train_inputs)-1,num_rbf)
+        patterns = train_inputs[index.astype(int)]        
+        kmeans.fit(patterns)
+    
 
     centroids = kmeans.cluster_centers_
     
@@ -482,8 +470,6 @@ def invert_matrix_regression(r_matrix, train_outputs):
     B = np.array(train_outputs)
     R1 = np.linalg.pinv(R)
     coefficients = np.matmul(R1,B)
-    coefficients = coefficients.transpose()
-    coefficients = coefficients.tolist()
 
     return coefficients
 

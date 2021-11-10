@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-t", "/home/i82dianr/UCO/IMC/RBF/datasetsLA3IMC/dat/train_sin.dat"]
+            "args": ["-t", "/home/i82dianr/UCO/IMC/RBF/datasetsLA3IMC/csv/train_sin.csv"]
         }
     ]
 }
