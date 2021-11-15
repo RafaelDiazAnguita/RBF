@@ -15,12 +15,11 @@ import numpy as np
 import math
 import sys
 from numpy.lib.function_base import append
-from pandas.core import api
 from sklearn.cluster import KMeans
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-
-from ejercicio import X_test
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import accuracy_score
 
 def checkParameters():
     parameters = []
@@ -182,7 +181,6 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
     train_inputs, train_outputs, test_inputs, test_outputs = read_data(train_file, 
                                                                         test_file,
                                                                         outputs)
-
     n_patterns = len(train_outputs)
     num_rbf = int(n_patterns * ratio_rbf)
     #TODO: Obtain num_rbf from ratio_rbf
@@ -203,13 +201,7 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
     TODO: Obtain the distances from the centroids to the test patterns
           and obtain the R matrix for the test set
     """
-    test_distances = []
-    for i in range (len(train_inputs)):
-        each_distance = []
-        for j in range(num_rbf):
-            each_distance.append( euclidean_distance(train_inputs[i],centers[j]) )
-
-        test_distances.append(each_distance)
+    test_distances = kmeans.transform(test_inputs)   
     
     r_matrix_test = calculate_r_matrix(test_distances, radii)
 
@@ -241,7 +233,14 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
               probabilities and the target probabilities
         """
         test_predictions = logreg.predict(test_inputs)
-        print(test_predictions)
+        train_predictions = logreg.predict(train_inputs)
+
+        train_mse = mean_squared_error(train_outputs,train_predictions)
+        test_mse = mean_squared_error(test_outputs,test_predictions)
+        
+        train_ccr = accuracy_score(train_outputs,train_predictions)
+        test_ccr = accuracy_score(test_outputs,test_predictions)
+
     else:
         """
         TODO: Obtain the predictions for training and test and calculate
@@ -249,14 +248,12 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
         """
         train_predictions = np.dot(r_matrix_train, coefficients)
         test_predictions = np.dot(r_matrix_test, coefficients)
-        train_mse = 0.0
-        test_mse = 0.0
 
-        train_mse = sum(pow(train_outputs-train_predictions,2)) / (outputs * len(train_outputs)) 
-        test_mse = sum(pow(test_outputs-test_predictions,2)) / (outputs * len(test_outputs)) 
+        train_mse = mean_squared_error(train_outputs,train_predictions)
+        test_mse = mean_squared_error(test_outputs,test_predictions)
         
-        train_ccr = 0
-        test_ccr = 0
+        train_ccr = -1
+        test_ccr = -1
 
 
     return train_mse, test_mse, train_ccr, test_ccr
@@ -373,15 +370,8 @@ def clustering(classification, train_inputs, train_outputs, num_rbf):
 
     centroids = kmeans.cluster_centers_
     
-    distances = []
-    for i in range (len(train_inputs)):
-        each_distance = []
-        for j in range(num_rbf):
-            each_distance.append( euclidean_distance(train_inputs[i],centroids[j]) )
-
-        distances.append(each_distance)
+    distances = kmeans.transform(train_inputs)   
         
-    
     return kmeans, distances, centroids
 
 def calculate_radii(centers, num_rbf):
