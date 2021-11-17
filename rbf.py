@@ -14,12 +14,13 @@ import os
 import numpy as np
 import math
 import sys
-from numpy.lib.function_base import append
+from sklearn.base import TransformerMixin
 from sklearn.cluster import KMeans
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 
 def checkParameters():
     parameters = []
@@ -232,8 +233,8 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
               the CCR. Obtain also the MSE, but comparing the obtained
               probabilities and the target probabilities
         """
-        test_predictions = logreg.predict(test_inputs)
-        train_predictions = logreg.predict(train_inputs)
+        test_predictions = logreg.predict(r_matrix_test)
+        train_predictions = logreg.predict(r_matrix_train)
 
         train_mse = mean_squared_error(train_outputs,train_predictions)
         test_mse = mean_squared_error(test_outputs,test_predictions)
@@ -252,8 +253,8 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
         train_mse = mean_squared_error(train_outputs,train_predictions)
         test_mse = mean_squared_error(test_outputs,test_predictions)
         
-        train_ccr = -1
-        test_ccr = -1
+        train_ccr = 0
+        test_ccr = 0
 
 
     return train_mse, test_mse, train_ccr, test_ccr
@@ -317,7 +318,11 @@ def init_centroids_classification(train_inputs, train_outputs, num_rbf):
     """
     
     #TODO: Complete the code of the function
-    return centroids
+    X_train, X_test, y_train, y_test = train_test_split( train_inputs, train_outputs, 
+                                    test_size=num_rbf/len(train_outputs), random_state=42, stratify=train_outputs)
+
+    return X_test
+    
 
 def euclidean_distance(a,b):
 
@@ -359,14 +364,12 @@ def clustering(classification, train_inputs, train_outputs, num_rbf):
     kmeans = KMeans(n_clusters = num_rbf,max_iter = 500,n_init=1)
 
     if classification:
+        patterns = init_centroids_classification(train_inputs,train_outputs,num_rbf)
+        kmeans.fit(patterns)
+    else:
         index = np.random.choice(train_inputs.shape[0],num_rbf,replace=False)
         patterns = train_inputs[index]
         kmeans.fit(patterns)
-    else:
-        index = np.linspace(0,len(train_inputs)-1,num_rbf)
-        patterns = train_inputs[index.astype(int)]        
-        kmeans.fit(patterns)
-    
 
     centroids = kmeans.cluster_centers_
     
@@ -494,6 +497,7 @@ def logreg_classification(matriz_r, train_outputs, l2, eta):
         logreg = LogisticRegression( C=1/eta,penalty='l1',solver='liblinear')
 
     logreg.fit(matriz_r,train_outputs)
+    #logreg.fit(matriz_r,train_outputs)
     return logreg
 
 
