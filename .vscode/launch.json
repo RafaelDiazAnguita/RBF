@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-t", "/home/i82dianr/UCO/IMC/RBF/datasetsLA3IMC/csv/train_divorce.csv",
-                "-T","/home/i82dianr/UCO/IMC/RBF/datasetsLA3IMC/csv/test_divorce.csv","-c"]
+            "args": ["-t", "/home/i82dianr/UCO/IMC/RBF/datasetsLA3IMC/csv/train_sin.csv",
+                "-T","/home/i82dianr/UCO/IMC/RBF/datasetsLA3IMC/csv/test_sin.csv"]
         }
     ]
 }

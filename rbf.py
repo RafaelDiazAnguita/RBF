@@ -14,13 +14,13 @@ import os
 import numpy as np
 import math
 import sys
-from sklearn.base import TransformerMixin
 from sklearn.cluster import KMeans
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 def checkParameters():
     parameters = []
@@ -241,6 +241,9 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
         
         train_ccr = accuracy_score(train_outputs,train_predictions)
         test_ccr = accuracy_score(test_outputs,test_predictions)
+        
+        #test confusion matrix
+        #print("TEST CONFUSION MATRIX:",confusion_matrix(test_outputs,test_predictions))
 
     else:
         """
@@ -252,10 +255,14 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
 
         train_mse = mean_squared_error(train_outputs,train_predictions)
         test_mse = mean_squared_error(test_outputs,test_predictions)
-        
+
         train_ccr = 0
         test_ccr = 0
-
+        
+        #uncomment this if you are executing a classification problem as a regression one
+        #train_ccr = accuracy_score(train_outputs,train_predictions.astype(int))
+        #test_ccr = accuracy_score(test_outputs,test_predictions.astype(int))
+        
 
     return train_mse, test_mse, train_ccr, test_ccr
 
@@ -323,7 +330,6 @@ def init_centroids_classification(train_inputs, train_outputs, num_rbf):
 
     return X_test
     
-
 def euclidean_distance(a,b):
 
     sumatory = 0
@@ -361,7 +367,7 @@ def clustering(classification, train_inputs, train_outputs, num_rbf):
     """
 
     #TODO: Complete the code of the function
-    kmeans = KMeans(n_clusters = num_rbf,max_iter = 500,n_init=1)
+    kmeans = KMeans(n_clusters = num_rbf,max_iter = 500,n_init=1,init='random')
 
     if classification:
         patterns = init_centroids_classification(train_inputs,train_outputs,num_rbf)
