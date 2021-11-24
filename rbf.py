@@ -7,7 +7,7 @@ IMC: lab assignment 3
 
 @author: pagutierrez
 """
-
+#use python3
 # TODO Include all neccesary imports
 import pickle
 import os
@@ -21,6 +21,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import LabelBinarizer
 
 def checkParameters():
     parameters = []
@@ -197,6 +198,7 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
         logreg = logreg_classification(r_matrix_train, train_outputs, l2, eta)
     else:
         coefficients = invert_matrix_regression(r_matrix_train, train_outputs)
+    
 
     """
     TODO: Obtain the distances from the centroids to the test patterns
@@ -236,15 +238,21 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
         test_predictions = logreg.predict(r_matrix_test)
         train_predictions = logreg.predict(r_matrix_train)
 
+        train_ccr = accuracy_score(train_outputs,train_predictions)
+        test_ccr = accuracy_score(test_outputs,test_predictions)
+
+        #test confusion matrix
+        print("TEST CONFUSION MATRIX: \n",confusion_matrix(test_outputs,test_predictions))
+
+        lb = LabelBinarizer().fit(train_outputs)
+        train_outputs = lb.transform(train_outputs)
+        test_outputs = lb.transform(test_outputs)
+        train_predictions = lb.transform(train_predictions)
+        test_predictions = lb.transform(test_predictions)
+
         train_mse = mean_squared_error(train_outputs,train_predictions)
         test_mse = mean_squared_error(test_outputs,test_predictions)
         
-        train_ccr = accuracy_score(train_outputs,train_predictions)
-        test_ccr = accuracy_score(test_outputs,test_predictions)
-        
-        #test confusion matrix
-        #print("TEST CONFUSION MATRIX:",confusion_matrix(test_outputs,test_predictions))
-
     else:
         """
         TODO: Obtain the predictions for training and test and calculate
@@ -503,7 +511,10 @@ def logreg_classification(matriz_r, train_outputs, l2, eta):
         logreg = LogisticRegression( C=1/eta,penalty='l1',solver='liblinear')
 
     logreg.fit(matriz_r,train_outputs)
-    #logreg.fit(matriz_r,train_outputs)
+    
+    coefs = np.sum(np.abs(logreg.coef_) > 0.00001)
+    print("Coefficients used: ",coefs)
+
     return logreg
 
 
