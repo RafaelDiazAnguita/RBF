@@ -183,6 +183,7 @@ def train_rbf(train_file, test_file, classification, ratio_rbf, l2, eta, outputs
     train_inputs, train_outputs, test_inputs, test_outputs = read_data(train_file, 
                                                                         test_file,
                                                                         outputs)
+                                                                       
     n_patterns = len(train_outputs)
     num_rbf = int(n_patterns * ratio_rbf)
     #TODO: Obtain num_rbf from ratio_rbf
@@ -537,6 +538,7 @@ def predict(test_file, model_file):
     """
     test_df = pd.read_csv(test_file, header=None)
     test_inputs = test_df.values[:, :]
+    print(test_inputs.shape) 
     
     with open(model_file, 'rb') as f:
         saved_data = pickle.load(f)
